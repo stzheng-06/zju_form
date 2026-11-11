@@ -1,10 +1,9 @@
-# zju_form
+﻿# zju_form
 
-浙江大学国际学生中国文化体验调查问卷的中英双语 HTML 预览。
+中英双语匿名问卷。`index.html` 提交答卷至 Supabase；答卷保存在 `survey_responses` 表，匿名访问只开放新增权限，不开放读取。
 
-- `index.html`：可直接打开或通过 GitHub Pages 展示的问卷预览。
-- `调查问卷.md`：37 题中英双语问卷源文件。
+## Supabase 初始化
 
-当前页面是**预览版**，填写后不会保存答卷。要在线收集数据，还需接入 Supabase 并配置只允许匿名提交、禁止公开读取的数据库权限。请勿将答卷或 Supabase secret key 提交到此仓库。
+在项目的 SQL Editor 中运行 `supabase_setup.sql`。Project URL 与 publishable key 已配置在 `index.html`。不要把 secret key 或 service_role key 放入网页或仓库。
 
-在 GitHub 仓库的 **Settings → Pages** 中选择 **Deploy from a branch**、`main`、`/(root)`，即可发布此预览页。
+提交表单后，在 Supabase Dashboard 的 Table Editor 查看或导出答卷。GitHub Pages 发布前，将仓库的 Pages source 设为 `main` 分支的根目录。
