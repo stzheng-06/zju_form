@@ -49,7 +49,7 @@ exportButton.addEventListener('click',async()=>{
       const data=await response.json();if(!response.ok)throw Error(data.message||'无权读取答卷；请检查管理员邮箱权限。/ Not authorized to read responses.');
       rows.push(...data);if(data.length<pageSize)break;offset+=pageSize;
     }
-    const columns=['id','created_at','survey_version',...Array.from({length:37},(_,i)=>'q'+(i+1)),'q32_other','q33_other'];
+    const columns=['id','created_at','survey_version',...Array.from({length:37},(_,i)=>'q'+(i+1)),'q31_other','q32_other','q33_other'];
     const lines=[columns.map(csvCell).join(',')];
     for(const row of rows){const answers=row.answers||{};lines.push(columns.map(key=>csvCell(key in row?row[key]:(Array.isArray(answers[key])?answers[key].join('；'):answers[key]||''))).join(','))}
     const blob=new Blob(['\uFEFF'+lines.join('\r\n')+'\r\n'],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='zju_culture_survey_'+new Date().toISOString().slice(0,10)+'.csv';a.click();URL.revokeObjectURL(url);setStatus('已导出 '+rows.length+' 份答卷。/ Exported '+rows.length+' responses.','ok');
