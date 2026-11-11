@@ -13,3 +13,9 @@ drop policy if exists survey_responses_anon_insert on public.survey_responses;
 create policy survey_responses_anon_insert
   on public.survey_responses for insert to anon
   with check (consent is true and jsonb_typeof(answers) = 'object');
+
+grant select on public.survey_responses to authenticated;
+drop policy if exists survey_responses_owner_read on public.survey_responses;
+create policy survey_responses_owner_read
+  on public.survey_responses for select to authenticated
+  using (lower(auth.jwt() ->> 'email') = lower('REPLACE_WITH_YOUR_SUPABASE_LOGIN_EMAIL'));

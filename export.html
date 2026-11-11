@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>问卷数据导出 / Survey CSV Export</title>
+  <style>
+    :root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#17262c;background:#f4f6f2}*{box-sizing:border-box}body{margin:0}main{max-width:760px;margin:7vh auto;padding:24px}.card{background:#fff;border:1px solid #d9e2dc;border-radius:16px;padding:clamp(22px,5vw,42px);box-shadow:0 8px 24px #163c2710}h1{font-size:clamp(27px,5vw,38px);margin:8px 0 10px}.muted{color:#647773;line-height:1.65}.eyebrow{color:#38756d;font-size:12px;letter-spacing:.15em;font-weight:700}label{display:block;font-weight:600;margin:18px 0 7px}input{width:100%;padding:12px;border:1px solid #cad8d1;border-radius:8px;font:inherit}button{background:#176f62;color:white;border:0;border-radius:8px;padding:12px 18px;font:inherit;font-weight:650;cursor:pointer;margin-top:18px}button:disabled{opacity:.55;cursor:wait}.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.status{margin-top:18px;min-height:24px}.error{color:#a53b2d}.ok{color:#176f62}.small{font-size:13px}a{color:#176f62}
+  </style>
+</head>
+<body>
+<main><section class="card">
+  <div class="eyebrow">ZJU · SURVEY DATA</div>
+  <h1>问卷数据导出 <span class="muted">/ CSV Export</span></h1>
+  <p class="muted">请使用 Supabase 项目中获授权的登录账号。登录信息只在本页面内存中使用，不会保存。导出的 CSV 包含全部已提交答卷，请妥善保管。</p>
+  <form id="login">
+    <label for="email">Supabase 登录邮箱 / Email</label>
+    <input id="email" type="email" autocomplete="username" required>
+    <label for="password">密码 / Password</label>
+    <input id="password" type="password" autocomplete="current-password" required>
+    <div class="row"><button id="loginButton" type="submit">登录 / Sign in</button><button id="exportButton" type="button" disabled>导出 CSV / Export CSV</button></div>
+  </form>
+  <p id="status" class="status muted" role="status"></p>
+  <p class="small"><a href="./index.html">返回问卷 / Back to survey</a></p>
+</section></main>
+<script>
+const SUPABASE_URL='https://hnzyzyhcpuimuwwnrrhy.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY='sb_publishable_Vvwo6uYyENwNAaqv-vLdjQ_W6woQPGd';
+let accessToken='';
+const statusEl=document.getElementById('status');
+const loginButton=document.getElementById('loginButton');
+const exportButton=document.getElementById('exportButton');
+const setStatus=(message,kind='muted')=>{statusEl.className='status '+kind;statusEl.textContent=message};
+document.getElementById('login').addEventListener('submit',async event=>{
+  event.preventDefault();accessToken='';exportButton.disabled=true;loginButton.disabled=true;loginButton.textContent='登录中… / Signing in…';setStatus('正在验证账号… / Verifying account…');
+  try{
+    const response=await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:SUPABASE_PUBLISHABLE_KEY,'Content-Type':'application/json'},body:JSON.stringify({email:document.getElementById('email').value.trim(),password:document.getElementById('password').value})});
+    const data=await response.json();if(!response.ok)throw Error(data.msg||data.message||'登录失败，请检查邮箱和密码 / Sign-in failed. Check your credentials.');
+    accessToken=data.access_token;exportButton.disabled=false;setStatus('已登录。点击“导出 CSV”下载答卷。/ Signed in. Select Export CSV to download responses.','ok');
+  }catch(error){setStatus(error.message,'error')}finally{loginButton.disabled=false;loginButton.textContent='登录 / Sign in'}
+});
+function csvCell(value){return '"'+String(value??'').replaceAll('"','""')+'"'}
+exportButton.addEventListener('click',async()=>{
+  if(!accessToken)return;exportButton.disabled=true;setStatus('正在读取答卷… / Loading responses…');
+  try{
+    const rows=[];let offset=0;const pageSize=1000;
+    while(true){
+      const response=await fetch(SUPABASE_URL+'/rest/v1/survey_responses?select=id,created_at,survey_version,answers&order=created_at.asc&limit='+pageSize+'&offset='+offset,{headers:{apikey:SUPABASE_PUBLISHABLE_KEY,Authorization:'Bearer '+accessToken}});
+      const data=await response.json();if(!response.ok)throw Error(data.message||'无权读取答卷；请检查管理员邮箱权限。/ Not authorized to read responses.');
+      rows.push(...data);if(data.length<pageSize)break;offset+=pageSize;
+    }
+    const columns=['id','created_at','survey_version',...Array.from({length:37},(_,i)=>'q'+(i+1)),'q32_other','q33_other'];
+    const lines=[columns.map(csvCell).join(',')];
+    for(const row of rows){const answers=row.answers||{};lines.push(columns.map(key=>csvCell(key in row?row[key]:(Array.isArray(answers[key])?answers[key].join('；'):answers[key]||''))).join(','))}
+    const blob=new Blob(['\uFEFF'+lines.join('\r\n')+'\r\n'],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='zju_culture_survey_'+new Date().toISOString().slice(0,10)+'.csv';a.click();URL.revokeObjectURL(url);setStatus('已导出 '+rows.length+' 份答卷。/ Exported '+rows.length+' responses.','ok');
+  }catch(error){setStatus(error.message,'error')}finally{exportButton.disabled=false}
+});
+</script>
+</body>
+</html>

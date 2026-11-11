@@ -1,9 +1,13 @@
-﻿# zju_form
+# zju_form
 
-中英双语匿名问卷。`index.html` 提交答卷至 Supabase；答卷保存在 `survey_responses` 表，匿名访问只开放新增权限，不开放读取。
+中英双语匿名问卷。`index.html` 将答卷写入 Supabase；`export.html` 为管理员登录后导出 CSV 的页面。
 
-## Supabase 初始化
+## Supabase 设置
 
-在项目的 SQL Editor 中运行 `supabase_setup.sql`。Project URL 与 publishable key 已配置在 `index.html`。不要把 secret key 或 service_role key 放入网页或仓库。
+数据库建表和权限 SQL 在 `supabase_setup.sql`。请将文件中的 `REPLACE_WITH_YOUR_SUPABASE_LOGIN_EMAIL` 替换为管理员 Supabase Auth 邮箱，然后在 SQL Editor 重新运行。该策略只允许此邮箱读取答卷。
 
-提交表单后，在 Supabase Dashboard 的 Table Editor 查看或导出答卷。GitHub Pages 发布前，将仓库的 Pages source 设为 `main` 分支的根目录。
+在 Supabase Dashboard → Authentication → Users 中创建或确认管理员登录用户。之后在 `export.html` 使用该邮箱和密码登录并下载 CSV。登录凭据不会保存到浏览器存储。
+
+Project URL 和 publishable key 位于 HTML 中。publishable key 供公开网页使用；不要提交 secret key、service_role key 或数据库密码。匿名用户只能新增答卷，不能读取。
+
+GitHub Pages：Settings → Pages → Deploy from a branch → `main` → `/(root)`。
